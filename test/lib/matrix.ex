@@ -41,7 +41,7 @@ defmodule Matrix do
   end
 
   defp do_multiply(matrix1, matrix2, row, col, size, agent) do
-    result = Enum.reduce(0, 0..size-1, fn k, acc ->
+    result = Enum.reduce(0..size-1, 0, fn k, acc ->
       update_counter(:multiplications, agent)
       val1 = Enum.at(matrix1, row) |> Enum.at(k)
       val2 = Enum.at(matrix2, k) |> Enum.at(col)
@@ -52,7 +52,7 @@ defmodule Matrix do
     result
   end
 
-  def multiply_strassen(matrix1, matrix2) do
+  def multiply_strassen(matrix1, matrix2, l) do
     if !is_matrix(matrix1) or !is_matrix(matrix2) do
       IO.puts("Error: Matrices must be 2D lists of numbers.")
       []
@@ -62,18 +62,22 @@ defmodule Matrix do
     size2 = length(matrix2)
 
     # Perform Strassen multiplication
-    result = strassen_multiply(matrix1, matrix2, agent)
+    result = strassen_multiply(matrix1, matrix2, agent, l)
 
     # Trim result to original size
     {trim_matrix(result, size1), agent}
   end
 
-  defp strassen_multiply(matrix1, matrix2, agent) when length(matrix1) == 1 do
+  defp strassen_multiply(matrix1, matrix2, agent, l) when length(matrix1) == 1 do
     update_counter(:multiplications, agent)
     [[Enum.at(Enum.at(matrix1, 0), 0) * Enum.at(Enum.at(matrix2, 0), 0)]]
   end
 
-  defp strassen_multiply(matrix1, matrix2, agent) do
+  defp strassen_multiply(matrix1, matrix2, agent, l) when length(matrix1) <= l do
+    multiply(matrix1, matrix2)
+  end
+
+  defp strassen_multiply(matrix1, matrix2, agent, l) do
     size = length(matrix1)
     mid = div(size, 2)
 
@@ -87,13 +91,13 @@ defmodule Matrix do
     b21 = submatrix(matrix2, mid, 0, mid)
     b22 = submatrix(matrix2, mid, mid, mid)
 
-    m1 = strassen_multiply(add_matrices(a11, a22, agent), add_matrices(b11, b22, agent), agent)
-    m2 = strassen_multiply(add_matrices(a21, a22, agent), b11, agent)
-    m3 = strassen_multiply(a11, subtract_matrices(b12, b22, agent), agent)
-    m4 = strassen_multiply(a22, subtract_matrices(b21, b11, agent), agent)
-    m5 = strassen_multiply(add_matrices(a11, a12, agent), b22, agent)
-    m6 = strassen_multiply(subtract_matrices(a21, a11, agent), add_matrices(b11, b12, agent), agent)
-    m7 = strassen_multiply(subtract_matrices(a12, a22, agent), add_matrices(b21, b22, agent), agent)
+    m1 = strassen_multiply(add_matrices(a11, a22, agent), add_matrices(b11, b22, agent), agent, l)
+    m2 = strassen_multiply(add_matrices(a21, a22, agent), b11, agent, l)
+    m3 = strassen_multiply(a11, subtract_matrices(b12, b22, agent), agent, l)
+    m4 = strassen_multiply(a22, subtract_matrices(b21, b11, agent), agent, l)
+    m5 = strassen_multiply(add_matrices(a11, a12, agent), b22, agent, l)
+    m6 = strassen_multiply(subtract_matrices(a21, a11, agent), add_matrices(b11, b12, agent), agent, l)
+    m7 = strassen_multiply(subtract_matrices(a12, a22, agent), add_matrices(b21, b22, agent), agent, l)
 
     c11 = add_matrices(subtract_matrices(add_matrices(m1, m4, agent), m5, agent), m7, agent)
     c12 = add_matrices(m3, m5, agent)
@@ -147,5 +151,5 @@ matrix2 = [
   [3, 2, 1]
 ]
 
-{result, agent} = Matrix.multiply_strassen(matrix1, matrix2)
+{result, agent} = Matrix.multiply_strassen(matrix1, matrix2, 1)
 IO.inspect(Agent.get(agent, &(&1)))
