@@ -20,6 +20,9 @@ defmodule Test do
         Enum.reduce(0..size-1, 0, fn k, acc ->a[i][k] * b[k][j] + acc end)))
   end
 
+# make multi but with enum
+
+
   def strassen(a, b, exp, l) do
     size = Math.pow(2, exp-1)
     if exp <= l or exp <= 1 do
