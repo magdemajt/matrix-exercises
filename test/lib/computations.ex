@@ -1,7 +1,7 @@
 defmodule Computations do
   def main do
-    ks = 2..7
-    ls = [2, 5, 8]
+    ks = 2..16
+    ls = [4, 32, 256]
 
     for k <- ks, do: (for l <- ls, do: compute(k, l))
   end
