@@ -1,0 +1,169 @@
+defmodule Matrix do
+
+  def reset_counters() do
+    {:ok, agent}= Agent.start_link(fn -> %{ additions: 0, multiplications: 0, subtractions: 0 } end)
+    agent
+  end
+
+
+
+  defp update_counter(operation, agent) do
+    operation = case operation do
+      :multiplications -> :multiplications
+      :additions -> :additions
+      :subtractions -> :subtractions
+      _ -> IO.puts("Error: Invalid operation.")
+    end
+    if operation != nil do
+     Agent.update(agent, fn counters ->
+                                           Map.update!(counters, operation, &(&1 + 1))
+     end)
+   end
+  end
+
+  def multiply(matrix1, matrix2) do
+    if !is_matrix(matrix1) or !is_matrix(matrix2) do
+      IO.puts("Error: Matrices must be 2D lists of numbers.")
+      []
+    end
+    agent = reset_counters()
+    rows1 = length(matrix1)
+    cols1 = length(Enum.at(matrix1, 0))
+    rows2 = length(matrix2)
+    cols2 = length(Enum.at(matrix2, 0))
+
+    if cols1 != rows2 do
+      IO.puts("Error: Matrices cannot be multiplied. Number of columns in the first matrix must equal the number of rows in the second matrix.")
+      []
+    else
+      for i <- 0..rows1-1, do: for j <- 0..cols2-1, do: do_multiply(matrix1, matrix2, i, j, cols1, agent)
+    end
+  end
+
+  defp do_multiply(matrix1, matrix2, row, col, size, agent) do
+    result = Enum.reduce(0..size-1, 0, fn k, acc ->
+      update_counter(:multiplications, agent)
+      val1 = Enum.at(matrix1, row) |> Enum.at(k)
+      val2 = Enum.at(matrix2, k) |> Enum.at(col)
+      update_counter(:additions, agent)
+      acc + val1 * val2
+    end)
+    update_counter(:subtractions, agent)
+    result
+  end
+
+  def multiply_strassen(matrix1, matrix2, l) do
+    if !is_matrix(matrix1) or !is_matrix(matrix2) do
+      IO.puts("Error: Matrices must be 2D lists of numbers.")
+      []
+    end
+    agent = reset_counters()
+    size1 = length(matrix1)
+    size2 = length(matrix2)
+
+    # Perform Strassen multiplication
+    result = strassen_multiply(matrix1, matrix2, agent, l)
+
+    # Trim result to original size
+    {trim_matrix(result, size1), agent}
+  end
+
+  defp strassen_multiply(matrix1, matrix2, agent, l) when length(matrix1) == 1 do
+    update_counter(:multiplications, agent)
+    [[Enum.at(Enum.at(matrix1, 0), 0) * Enum.at(Enum.at(matrix2, 0), 0)]]
+  end
+
+  defp strassen_multiply(matrix1, matrix2, agent, l) when length(matrix1) <= l do
+    if !is_matrix(matrix1) or !is_matrix(matrix2) do
+      IO.puts("Error: Matrices must be 2D lists of numbers.")
+      []
+    end
+    rows1 = length(matrix1)
+    cols1 = length(Enum.at(matrix1, 0))
+    rows2 = length(matrix2)
+    cols2 = length(Enum.at(matrix2, 0))
+
+    if cols1 != rows2 do
+      IO.puts("Error: Matrices cannot be multiplied. Number of columns in the first matrix must equal the number of rows in the second matrix.")
+      []
+    else
+      for i <- 0..rows1-1, do: for j <- 0..cols2-1, do: do_multiply(matrix1, matrix2, i, j, cols1, agent)
+    end
+  end
+
+  defp strassen_multiply(matrix1, matrix2, agent, l) do
+    size = length(matrix1)
+    mid = div(size, 2)
+
+    a11 = submatrix(matrix1, 0, 0, mid)
+    a12 = submatrix(matrix1, 0, mid, mid)
+    a21 = submatrix(matrix1, mid, 0, mid)
+    a22 = submatrix(matrix1, mid, mid, mid)
+
+    b11 = submatrix(matrix2, 0, 0, mid)
+    b12 = submatrix(matrix2, 0, mid, mid)
+    b21 = submatrix(matrix2, mid, 0, mid)
+    b22 = submatrix(matrix2, mid, mid, mid)
+
+    m1 = strassen_multiply(add_matrices(a11, a22, agent), add_matrices(b11, b22, agent), agent, l)
+    m2 = strassen_multiply(add_matrices(a21, a22, agent), b11, agent, l)
+    m3 = strassen_multiply(a11, subtract_matrices(b12, b22, agent), agent, l)
+    m4 = strassen_multiply(a22, subtract_matrices(b21, b11, agent), agent, l)
+    m5 = strassen_multiply(add_matrices(a11, a12, agent), b22, agent, l)
+    m6 = strassen_multiply(subtract_matrices(a21, a11, agent), add_matrices(b11, b12, agent), agent, l)
+    m7 = strassen_multiply(subtract_matrices(a12, a22, agent), add_matrices(b21, b22, agent), agent, l)
+
+    c11 = add_matrices(subtract_matrices(add_matrices(m1, m4, agent), m5, agent), m7, agent)
+    c12 = add_matrices(m3, m5, agent)
+    c21 = add_matrices(m2, m4, agent)
+    c22 = add_matrices(subtract_matrices(add_matrices(m1, m3, agent), m2, agent), m6, agent)
+
+    combine_submatrices(c11, c12, c21, c22)
+  end
+
+  defp add_matrices(matrix1, matrix2, agent) do
+    update_counter(:additions, agent)
+    Enum.zip(matrix1, matrix2) |> Enum.map(fn {row1, row2} -> Enum.zip(row1, row2) |> Enum.map(fn {elem1, elem2} -> elem1 + elem2  end) end)
+  end
+
+  defp subtract_matrices(matrix1, matrix2, agent) do
+    update_counter(:subtractions, agent)
+    Enum.zip(matrix1, matrix2) |> Enum.map(fn {row1, row2} -> Enum.zip(row1, row2) |> Enum.map(fn {elem1, elem2} -> elem1 - elem2  end) end)
+  end
+
+  defp submatrix(matrix, row_start, col_start, size) do
+    Enum.slice(matrix, row_start, size)
+    |> Enum.map(&Enum.slice(&1, col_start, size))
+  end
+
+  defp combine_submatrices(c11, c12, c21, c22) do
+    c_top = Enum.zip(c11, c12) |> Enum.map(fn {row1, row2} -> row1 ++ row2 end)
+    c_bottom = Enum.zip(c21, c22) |> Enum.map(fn {row1, row2} -> row1 ++ row2 end)
+    c_top ++ c_bottom
+  end
+
+  defp trim_matrix(matrix, size) do
+    Enum.slice(matrix, 0, size) |> Enum.map(&Enum.slice(&1, 0, size))
+  end
+
+  defp is_matrix(matrix) do
+    is_list(matrix) and
+    length(matrix) > 0 and
+    is_list(Enum.at(matrix, 0))
+  end
+end
+
+# Example usage
+matrix1 = [
+  [1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 9]
+]
+matrix2 = [
+  [9, 8, 7],
+  [6, 5, 4],
+  [3, 2, 1]
+]
+
+{result, agent} = Matrix.multiply_strassen(matrix1, matrix2, 1)
+IO.inspect(Agent.get(agent, &(&1)))
