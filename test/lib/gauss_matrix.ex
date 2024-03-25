@@ -171,14 +171,14 @@ defmodule GaussMatrix do
     end)
   end
 
-  def solve_system_lu(a, b, :unstable) do
+  def solve_system_lu(a, b, :stable) do
     {l, u, p} = lu_decomposition_with_pivot(a)
     y = forward_substitution(l, Matrix.mult(p, b))
     x = backward_substitution(u, y)
     x
   end
 
-  def solve_system_lu(a, b, :stable) do
+  def solve_system_lu(a, b, :unstable) do
     {l, u} = lu_decomposition(a)
     y = forward_substitution(l, b)
     x = backward_substitution(u, y)
