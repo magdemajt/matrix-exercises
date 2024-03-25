@@ -267,8 +267,8 @@ defmodule GaussMatrixComputations do
     IO.inspect("ZAD 1")
     matrix = GaussMatrix.random_matrix()
     vector = GaussMatrix.result_vector()
-    Matrix.pretty_print(matrix)
-    Matrix.pretty_print(vector)
+    Matrix.pretty_print(matrix, "%d", " ")
+    Matrix.pretty_print(vector, "%d", " ")
     Matrix.pretty_print(GaussMatrix.solve_system(matrix, vector, :unstable))
   end
 
@@ -276,8 +276,8 @@ defmodule GaussMatrixComputations do
     IO.inspect("ZAD 2")
     matrix = GaussMatrix.random_matrix()
     vector = GaussMatrix.result_vector()
-    Matrix.pretty_print(matrix)
-    Matrix.pretty_print(vector)
+    Matrix.pretty_print(matrix, "%d", " ")
+    Matrix.pretty_print(vector, "%d", " ")
     Matrix.pretty_print(GaussMatrix.solve_system(matrix, vector, :stable))
   end
 
@@ -285,8 +285,8 @@ defmodule GaussMatrixComputations do
     IO.inspect("ZAD 3")
     matrix = GaussMatrix.random_matrix()
     vector = GaussMatrix.result_vector()
-    Matrix.pretty_print(matrix)
-    Matrix.pretty_print(vector)
+    Matrix.pretty_print(matrix, "%d", " ")
+    Matrix.pretty_print(vector, "%d", " ")
     Matrix.pretty_print(GaussMatrix.solve_system_lu(matrix, vector, :unstable))
   end
 
@@ -294,8 +294,8 @@ defmodule GaussMatrixComputations do
     IO.inspect("ZAD 4")
     matrix = GaussMatrix.random_matrix()
     vector = GaussMatrix.result_vector()
-    Matrix.pretty_print(matrix)
-    Matrix.pretty_print(vector)
+    Matrix.pretty_print(matrix, "%d", " ")
+    Matrix.pretty_print(vector, "%d", " ")
     Matrix.pretty_print(GaussMatrix.solve_system_lu(matrix, vector, :stable))
   end
 end
