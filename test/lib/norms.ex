@@ -11,8 +11,11 @@ defmodule Norms do
   def norm_m_1(matrix) do
     {rows, cols} = Matrix.size(matrix)
 
+    col1 = Enum.reduce(0..(rows - 1), 0, fn i, acc ->
+      acc + Matrix.elem(matrix, i, 0)
+    end)
 #   sum each column and take max
-    Enum.reduce(0..(cols - 1), 0, fn j, acc ->
+    Enum.reduce(0..(cols - 1), col1, fn j, acc ->
       Kernel.max(acc, Enum.reduce(0..(rows - 1), 0, fn i, acc ->
         acc + Matrix.elem(matrix, i, j)
       end))
@@ -22,7 +25,11 @@ defmodule Norms do
   def norm_m_inf(matrix) do
     {rows, cols} = Matrix.size(matrix)
 
-    Enum.reduce(0..(rows - 1), 0, fn i, acc ->
+    row1 = Enum.reduce(0..(cols - 1), 0, fn j, acc ->
+      acc + Matrix.elem(matrix, 0, j)
+    end)
+
+    Enum.reduce(0..(rows - 1), row1, fn i, acc ->
       Kernel.max(acc, Enum.reduce(0..(cols - 1), 0, fn j, acc ->
         acc + Matrix.elem(matrix, i, j)
       end))
@@ -30,11 +37,11 @@ defmodule Norms do
   end
 
   def norm_m_2(matrix) do
-    matrix |>
+    eigenvalues = matrix |>
     MatrixOperation.eigen()
     |> Kernel.elem(0)
     |> Enum.map(fn val -> Kernel.abs(val) end)
-    |> Enum.reduce(-100000000, fn value, acc -> Kernel.max(acc, value) end)
+    eigenvalues |> Enum.reduce(Enum.at(eigenvalues, 0), fn value, acc -> Kernel.max(acc, value) end)
   end
 
   def norm_m_p(matrix, p) do
